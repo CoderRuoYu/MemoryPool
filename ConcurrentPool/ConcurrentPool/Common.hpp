@@ -1,10 +1,19 @@
 ﻿#pragma once
 #include <iostream>
 #include <assert.h>
+#include <thread>
+#include <mutex>
 using std::cout;
 using std::endl;
 
 static const int NFreeLists = 208;
+
+#ifdef _WIN64
+typedef unsigned long long PAGEID;
+#elif _WIN32
+typedef size_t PAGEID;
+#endif
+
 class FreeList
 {
 public:
@@ -24,6 +33,55 @@ public:
 	}
 private:
 	void* _freeList = nullptr;
+};
+
+struct Span
+{
+	//页号
+	PAGEID _pageid = 0;
+
+	Span* _next = nullptr;
+	Span* _prev = nullptr;
+
+	void* _freeList = nullptr;
+
+	bool _isUse = false;
+	size_t _useCount = 0;
+
+
+};
+//带头节点的双向循环链表
+class SpanList
+{
+public:
+	SpanList()
+	{
+		_head = new Span;
+		_head->_next = _head;
+		_head->_prev = _head;
+	}
+	void Insert(struct Span* pos, struct Span* newSpan)
+	{
+		assert(pos);
+		assert(newSpan);
+		Span* prev = pos->_prev;
+		prev->_next = newSpan;
+		newSpan->_prev = prev;
+		newSpan->_next = pos;
+		pos->_prev = newSpan;
+	}
+	void Erase(struct Span* pos)
+	{
+		assert(pos);
+		assert(_head != nullptr);
+		Span* prev = pos->_prev;
+		Span* next = pos->_next;
+		prev->_next = next;
+		next->_prev = prev;
+	}
+private:
+	struct Span* _head;
+
 };
 // [1,128] 8byte对⻬ freelist[0,16)
 // [128+1,1024] 16byte对⻬ freelist[16,72)
