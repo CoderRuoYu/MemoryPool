@@ -31,6 +31,10 @@ public:
 		*(void**)cur = _freeList;
 		_freeList = cur;
 	}
+	bool IsEmpty()
+	{
+		return _freeList == nullptr;
+	}
 private:
 	void* _freeList = nullptr;
 };
@@ -128,7 +132,10 @@ public:
 		}
 		else
 		{
-			//线程申请空间大于threadcache可以申请到的空间大小
+			//线程申请空间大于threadcache可以申请到的空间大小 有待填充？？？？
+			assert(false);
+			exit(1);
+
 		}
 	}
 	static inline size_t _Index(size_t size, size_t alignNum)
@@ -170,6 +177,7 @@ public:
 		}
 		else
 		{
+			//线程申请空间大小，大于thread cache可以分配空间大小如何处理？？ 有待填充
 			assert(-1);
 		}
 	}
