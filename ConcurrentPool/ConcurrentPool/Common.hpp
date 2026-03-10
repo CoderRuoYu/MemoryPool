@@ -3,11 +3,12 @@
 #include <assert.h>
 #include <thread>
 #include <mutex>
+#include <algorithm>
 using std::cout;
 using std::endl;
 
 static const int NFreeLists = 208;
-
+static const int MaxBytes = 256 * 1024;
 #ifdef _WIN64
 typedef unsigned long long PAGEID;
 #elif _WIN32
@@ -35,8 +36,13 @@ public:
 	{
 		return _freeList == nullptr;
 	}
+	size_t& GetMaxSize()
+	{
+		return _maxSize;
+	}
 private:
 	void* _freeList = nullptr;
+	size_t _maxSize = 1;
 };
 
 struct Span
@@ -82,6 +88,10 @@ public:
 		Span* next = pos->_next;
 		prev->_next = next;
 		next->_prev = prev;
+	}
+	bool IsEmpty()
+	{
+		return _head->_next == _head;
 	}
 private:
 	struct Span* _head;
@@ -180,5 +190,14 @@ public:
 			//线程申请空间大小，大于thread cache可以分配空间大小如何处理？？ 有待填充
 			assert(-1);
 		}
+	}
+	static inline size_t SizeToBatchNum(size_t size)
+	{
+		size_t num = MaxBytes / size;
+		if (num < 2)
+			num = 2;
+		if (num > 512)
+			num = 512;
+		return num;
 	}
 };
