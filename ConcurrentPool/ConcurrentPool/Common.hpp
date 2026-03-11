@@ -7,6 +7,7 @@
 using std::cout;
 using std::endl;
 
+static const int PageNum = 128;
 static const int NFreeLists = 208;
 static const int MaxBytes = 256 * 1024;
 #ifdef _WIN64
@@ -14,7 +15,12 @@ typedef unsigned long long PAGEID;
 #elif _WIN32
 typedef size_t PAGEID;
 #endif
-
+void*& NextObj(void* tmp)
+{
+	assert(tmp != nullptr);
+	return *(void**)tmp;
+	
+}
 class FreeList
 {
 public:
@@ -31,6 +37,13 @@ public:
 		assert(cur != nullptr);
 		*(void**)cur = _freeList;
 		_freeList = cur;
+	}
+	void PushRangeObj(void* begin, void* end)
+	{
+		assert(begin != nullptr);
+		assert(end != nullptr);
+		NextObj(end) = _freeList;
+		_freeList = begin;
 	}
 	bool IsEmpty()
 	{
@@ -89,13 +102,19 @@ public:
 		prev->_next = next;
 		next->_prev = prev;
 	}
-	bool IsEmpty()
+	Span* Begin()
 	{
-		return _head->_next == _head;
+		return _head->_next;
 	}
+	Span* End()
+	{
+		return _head;
+	}
+public:
+	std::mutex _mtx;
 private:
 	struct Span* _head;
-
+	
 };
 // [1,128] 8byte对⻬ freelist[0,16)
 // [128+1,1024] 16byte对⻬ freelist[16,72)

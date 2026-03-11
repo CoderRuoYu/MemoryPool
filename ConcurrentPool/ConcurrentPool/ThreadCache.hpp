@@ -8,7 +8,6 @@ public:
 	void* Allocate(size_t size)
 	{
 		size_t index = SizeClass::Index(size);
-		size_t roundUpSize = SizeClass::RoundUp(size);
 		//队列中有数据
 		if (!_freeList[index].IsEmpty())
 		{
@@ -16,8 +15,7 @@ public:
 		}
 		else
 		{
-			//这个size传递是的是对齐前的
-			return FentchFromCentralCache(index, roundUpSize);
+			return FentchFromCentralCache(index, size);
 		}
 	}
 	void Deallocate(void* mem, size_t size)
@@ -26,6 +24,7 @@ public:
 		size_t index = SizeClass::Index(size);
 		_freeList[index].Push(mem);
 	}
+	//返回一个对象，剩下的挂在对应的index链表上
 	void* FentchFromCentralCache(size_t index, size_t size)
 	{
 		size_t batchNum = std::min(_freeList[index].GetMaxSize(), SizeClass::SizeToBatchNum(size));
@@ -33,18 +32,22 @@ public:
 		{
 			_freeList->GetMaxSize()++;
 		}
-		if (!CentralCache::GetCentralCacheInstance().IsEmpty(index))
+
+		void* begin = nullptr;
+		void* end = nullptr;
+		size_t actualNum = CentralCache::GetCentralCacheInstance().FetchRangeObj(begin, end, batchNum, size);
+		assert(actualNum > 0);
+		if (actualNum == 1)
 		{
-			//不为空，先找到一个非空span
+			return begin;
 		}
 		else
 		{
-			
+			void* res = begin;
+			begin = NextObj(begin);
+			_freeList[index].PushRangeObj(begin, end);
+			return res;
 		}
-
-
-
-		
 	}
 
 private:
