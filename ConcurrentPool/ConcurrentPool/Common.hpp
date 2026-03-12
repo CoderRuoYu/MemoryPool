@@ -10,6 +10,11 @@ using std::endl;
 static const int PageNum = 128;
 static const int NFreeLists = 208;
 static const int MaxBytes = 256 * 1024;
+
+static const int PageSize = 8 * 1024;
+static const int PageShift = 13;
+
+static const int Npages = 129;
 #ifdef _WIN64
 typedef unsigned long long PAGEID;
 #elif _WIN32
@@ -62,13 +67,14 @@ struct Span
 {
 	//页号
 	PAGEID _pageid = 0;
+	size_t _n = 0;//记录页的数量
 
 	Span* _next = nullptr;
 	Span* _prev = nullptr;
 
 	void* _freeList = nullptr;
 
-	bool _isUse = false;
+	
 	size_t _useCount = 0;
 
 
@@ -109,6 +115,21 @@ public:
 	Span* End()
 	{
 		return _head;
+	}
+	bool IsEmpty()
+	{
+		return _head->_next == _head;
+	}
+	Span* PopFront()
+	{
+		Span* res = _head->_next;
+		Erase(res);
+		return res;
+	}
+	void PushFront(Span* cur)
+	{
+		assert(cur);
+		Insert(_head->_next, cur);
 	}
 public:
 	std::mutex _mtx;
@@ -218,5 +239,13 @@ public:
 		if (num > 512)
 			num = 512;
 		return num;
+	}
+	static inline size_t SizeToPageNum(size_t size)
+	{
+		size_t batchNum = SizeToBatchNum(size);
+		size_t pageNum = batchNum * RoundUp(size) / PageNum;
+		if (pageNum < 1)
+			pageNum = 1;
+		return pageNum;
 	}
 };

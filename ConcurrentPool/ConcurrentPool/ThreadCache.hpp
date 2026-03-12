@@ -15,7 +15,7 @@ public:
 		}
 		else
 		{
-			return FentchFromCentralCache(index, size);
+			return FentchFromCentralCache(index, SizeClass::RoundUp(size));
 		}
 	}
 	void Deallocate(void* mem, size_t size)

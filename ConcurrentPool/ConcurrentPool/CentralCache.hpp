@@ -1,5 +1,6 @@
 #pragma once
 #include "Common.hpp"
+#include "PageCache.hpp"
 
 class CentralCache
 {
@@ -24,11 +25,15 @@ public:
 				begin = begin->_next;
 			}
 		}
-		
+		PageCache::GetPageCacheInstance()._mtxPage.lock();
+		Span* newSpan = PageCache::GetPageCacheInstance().NewSpan(SizeClass::SizeToPageNum(size));
+		PageCache::GetPageCacheInstance()._mtxPage.unlock();
+
 
 
 
 	}
+
 	size_t FetchRangeObj(void*& begin, void*& end, size_t batchNum, size_t size)
 	{
 		size_t index = SizeClass::Index(size);
