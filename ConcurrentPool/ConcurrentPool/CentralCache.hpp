@@ -28,10 +28,21 @@ public:
 		PageCache::GetPageCacheInstance()._mtxPage.lock();
 		Span* newSpan = PageCache::GetPageCacheInstance().NewSpan(SizeClass::SizeToPageNum(size));
 		PageCache::GetPageCacheInstance()._mtxPage.unlock();
-
-
-
-
+		//对Span进行切分
+		newSpan->_freeList = (void*)(newSpan->_pageid << PageShift);
+		char* start = (char*)newSpan->_freeList;
+		char* tail = (char*)((newSpan->_pageid + newSpan->_n) << PageShift);
+		
+		while (start + size != tail)
+		{
+			char* tmp = start + size;
+			NextObj(start) = tmp;
+			start += size;
+		}
+		NextObj(start) = nullptr;
+		
+		list.PushFront(newSpan);
+		return newSpan;
 	}
 
 	size_t FetchRangeObj(void*& begin, void*& end, size_t batchNum, size_t size)

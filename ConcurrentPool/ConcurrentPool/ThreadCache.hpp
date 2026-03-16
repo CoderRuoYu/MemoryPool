@@ -27,7 +27,7 @@ public:
 	//返回一个对象，剩下的挂在对应的index链表上
 	void* FentchFromCentralCache(size_t index, size_t size)
 	{
-		size_t batchNum = std::min(_freeList[index].GetMaxSize(), SizeClass::SizeToBatchNum(size));
+		size_t batchNum = min(_freeList[index].GetMaxSize(), SizeClass::SizeToBatchNum(size));
 		if (_freeList[index].GetMaxSize() == batchNum)
 		{
 			_freeList->GetMaxSize()++;

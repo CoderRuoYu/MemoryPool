@@ -33,7 +33,6 @@ public:
 			}
 			else
 			{
-				//newSpan是要返回的
 				Span* tmp = _spanList[i].PopFront();
 				Span* cur = new Span;
 
@@ -49,8 +48,11 @@ public:
 		}
 		//到这一步，说明整个链表spanlist中都没有span
 		Span* newSpan = new Span;
-		void* mem = SystemAlloc(Npages - 1);
-		
+		void* mem = (char*)SystemAlloc(Npages - 1);
+		newSpan->_n = Npages - 1;
+		newSpan->_pageid = (PAGEID)mem >> PageShift;
+		_spanList[Npages - 1].PushFront(newSpan);
+		return NewSpan(pageNums);
 	}
 public:
 	std::mutex _mtxPage;
