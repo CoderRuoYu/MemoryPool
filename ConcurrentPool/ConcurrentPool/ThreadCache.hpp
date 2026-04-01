@@ -18,12 +18,24 @@ public:
 			return FentchFromCentralCache(index, SizeClass::RoundUp(size));
 		}
 	}
+	void ListTooLong(FreeList& list, size_t size)
+	{
+		void* start = nullptr;
+		void* end = nullptr;
+		list.PopRangeObj(start, end, list.GetMaxSize());
+		CentralCache::GetCentralCacheInstance().RealseListToSpan(start, size);
+	}
 	void Deallocate(void* mem, size_t size)
 	{
 		assert(mem != nullptr);
 		size_t index = SizeClass::Index(size);
 		_freeList[index].Push(mem);
+		if (_freeList[index].Size() >= _freeList[index].GetMaxSize())
+		{
+			ListTooLong(_freeList[index], size);
+		}
 	}
+	
 	//返回一个对象，剩下的挂在对应的index链表上
 	void* FentchFromCentralCache(size_t index, size_t size)
 	{
@@ -45,7 +57,7 @@ public:
 		{
 			void* res = begin;
 			begin = NextObj(begin);
-			_freeList[index].PushRangeObj(begin, end);
+			_freeList[index].PushRangeObj(begin, end, actualNum - 1);
 			return res;
 		}
 	}

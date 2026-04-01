@@ -4,6 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <algorithm>
+#include <unordered_map>
 using std::cout;
 using std::endl;
 
@@ -34,6 +35,7 @@ public:
 		assert(_freeList != nullptr);
 		void* cur = _freeList;
 		_freeList = *(void**)_freeList;
+		_size--;
 		return cur;
 	}
 
@@ -42,13 +44,30 @@ public:
 		assert(cur != nullptr);
 		*(void**)cur = _freeList;
 		_freeList = cur;
+		_size++;
 	}
-	void PushRangeObj(void* begin, void* end)
+	void PushRangeObj(void* begin, void* end, size_t n)
 	{
 		assert(begin != nullptr);
 		assert(end != nullptr);
 		NextObj(end) = _freeList;
 		_freeList = begin;
+		_size += n;
+	}
+	void PopRangeObj(void*& start, void*& end, size_t n)
+	{
+		assert(n <= _size);
+		start = _freeList;
+		end = start;
+
+		for (size_t i = 0; i < n - 1; ++i)
+		{
+			end = NextObj(end);
+		}
+
+		_freeList = NextObj(end);
+		NextObj(end) = nullptr;
+		_size -= n;
 	}
 	bool IsEmpty()
 	{
@@ -58,9 +77,14 @@ public:
 	{
 		return _maxSize;
 	}
+	size_t Size()
+	{
+		return _size;
+	}
 private:
 	void* _freeList = nullptr;
 	size_t _maxSize = 1;
+	size_t _size = 0;
 };
 
 struct Span
@@ -243,7 +267,7 @@ public:
 	static inline size_t SizeToPageNum(size_t size)
 	{
 		size_t batchNum = SizeToBatchNum(size);
-		size_t pageNum = batchNum * RoundUp(size) / PageNum;
+		size_t pageNum = batchNum * RoundUp(size) / PageSize;
 		if (pageNum < 1)
 			pageNum = 1;
 		return pageNum;

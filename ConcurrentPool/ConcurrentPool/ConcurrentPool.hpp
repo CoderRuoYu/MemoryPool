@@ -12,5 +12,6 @@ void* AllocateMemory(size_t size)
 void DeallocateMemory(void* mem, size_t size)
 {
 	assert(ptrThreadCache != nullptr);
+
 	ptrThreadCache->Deallocate(mem, size);
 }

@@ -5,7 +5,40 @@
 class CentralCache
 {
 public:
+	void RealseListToSpan(void* start,size_t size)
+	{
+		//对一个桶进行操作的时候要加锁
+		size_t index = SizeClass::Index(size);
+		_spanList[index]._mtx.lock();
+		while (start)
+		{
 
+			void* next = NextObj(start);
+			Span* tmp = PageCache::GetPageCacheInstance().ObjToSpan(start);
+			NextObj(start) = tmp->_freeList;
+			tmp->_freeList = start;
+			tmp->_useCount--;
+			
+			if (tmp->_useCount == 0)
+			{
+				_spanList[index].Erase(tmp);
+				tmp->_freeList = nullptr;
+				tmp->_next = nullptr;
+				tmp->_prev = nullptr;
+				_spanList[index]._mtx.unlock();
+				//PageCache::
+				PageCache::GetPageCacheInstance()._mtxPage.lock();
+				PageCache::GetPageCacheInstance().ReleaseSpanToPageCache(tmp);
+				PageCache::GetPageCacheInstance()._mtxPage.unlock();
+				_spanList[index]._mtx.lock();
+			}
+			start = next;
+			
+
+		}
+		_spanList[index]._mtx.unlock();
+
+	}
 	static CentralCache& GetCentralCacheInstance()
 	{
 		return _centralCache;

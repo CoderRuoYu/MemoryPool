@@ -54,6 +54,47 @@ public:
 		_spanList[Npages - 1].PushFront(newSpan);
 		return NewSpan(pageNums);
 	}
+	Span* ObjToSpan(void* tmp)
+	{
+		PAGEID id = ((PAGEID)tmp) >> PageShift;
+		auto ptr = _idToSpan.find(id);
+		if (ptr != _idToSpan.end())
+		{
+			return ptr->second;
+		}
+		return nullptr;
+	}
+	void ReleaseSpanToPageCache(Span* tmp)
+	{
+		
+		//再合并即将大于128页时停止合并
+
+		//向前合并
+		while ()
+		{
+			auto ptr = _idToSpan.find(tmp->_pageid - 1);
+			if (ptr == _idToSpan.end())
+			{
+				break;
+			}
+			else
+			{
+				Span* prevSpan = ptr->second;
+				if (tmp->_n + prevSpan->_n > PageNum)
+				{
+					break;
+				}
+				else
+				{
+					
+				}
+
+			}
+
+		}
+		//向后合并
+
+	}
 public:
 	std::mutex _mtxPage;
 private:
@@ -61,5 +102,5 @@ private:
 	PageCache(const PageCache&) = delete;
 	static PageCache _pagecache;
 	SpanList _spanList[Npages];
-	
+	std::unordered_map<PAGEID, Span*> _idToSpan;
 };
